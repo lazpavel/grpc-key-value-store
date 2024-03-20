@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package kvstore;
+
+// The key-value store service definition.
+service KeyValueStore {
+  // Set a value for a key
+  rpc set(KVSetRequest) returns (KVResponse) {}
+
+  // Get the value of a key
+  rpc get(KVGetRequest) returns (KVResponse) {}
+}
+
+// The request message containing the key and value for the Set method.
+message KVSetRequest {
+  string key = 1;
+  string value = 2;
+}
+
+// The request message containing the key for the Get method.
+message KVGetRequest {
+  string key = 1;
+}
+
+// The response message containing the error code and message.
+message KVResponse {
+  int32 status_code = 1;
+  string message = 2;
+  string value = 3; // This field will be empty for Set method
+}
