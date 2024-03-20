@@ -12,6 +12,7 @@ pub mod kvstore {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Proxy server listening on port 8080...");
     let client = Client::open("rediss://amplify-hosting-shared-cache-demo-0acerw.serverless.use1.cache.amazonaws.com:6379").unwrap();
     let connection = Mutex::new(client.get_connection()?);
 
