@@ -42,7 +42,7 @@ pub mod kvstore {
 async fn main() -> Result<(), Error> {
     let start = Instant::now();
     info!("starting extension...");
-    let client = Arc::new(Mutex::new(KeyValueStoreClient::connect("http://[::1]:8080").await?));
+    let client = Arc::new(Mutex::new(KeyValueStoreClient::connect("http://18.212.134.90:8080").await?));
     let server_started = Arc::new(Notify::new());
     let server_future = async_work(client, server_started.clone());
     let _ = tokio::spawn(server_future);
