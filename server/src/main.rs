@@ -57,8 +57,6 @@ impl KeyValueStoreService {
 impl KeyValueStore for KeyValueStoreService {
     async fn set(&self, request: Request<KvSetRequest>) -> Result<Response<KvResponse>, Status> {
         let r = request.into_inner();
-        println!("Received set request: {:?}", r);
-
         let mut manager = self.manager.lock().unwrap().clone();
         let _: Result<String, RedisError> = manager.set(&r.key, &r.value).await;
 
@@ -71,7 +69,6 @@ impl KeyValueStore for KeyValueStoreService {
 
     async fn get(&self, request: Request<KvGetRequest>) -> Result<Response<KvResponse>, Status> {
         let r = request.into_inner();
-        println!("Received get request: {:?}", r);
         let mut manager = self.manager.lock().unwrap().clone();
         let result = manager.get(r.key).await;
 
