@@ -2,14 +2,8 @@ use kvstore::{
     key_value_store_server::{KeyValueStore, KeyValueStoreServer},
     KvGetRequest, KvResponse, KvSetRequest,
 };
-use native_tls::TlsConnector;
-use redis::Client;
+use std::sync::{Arc, Mutex};
 use redis::{aio::ConnectionManager, AsyncCommands, Client, RedisError};
-use std::{
-    sync::{Arc, Mutex},
-    time::Instant,
-};
-use tokio_native_tls::TlsConnector as TokioTlsConnector;
 use tonic::{transport::Server, Request, Response, Status};
 
 pub mod kvstore {
@@ -19,14 +13,24 @@ pub mod kvstore {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Proxy server listening on port 8080...");
-    let client = Client::open("rediss://amplify-hosting-shared-cache-demo-0acerw.serverless.use1.cache.amazonaws.com:6379").unwrap();
+    let addr = redis::ConnectionAddr::TcpTls {
+        host: "amplify-hosting-shared-cache-demo-0acerw.serverless.use1.cache.amazonaws.com".to_string(),
+        port: 6379,
+        insecure: true,
+        tls_params: None
+    };
 
-    let mut builder = TlsConnector::builder();
-    builder.danger_accept_invalid_certs(true);
-    let tls_connector = builder.build().unwrap();
-    let tokio_tls_connector = TokioTlsConnector::from(tls_connector);
-    client.set_connector(tokio_tls_connector);
+    let conn_info = redis::ConnectionInfo {
+        addr,
+        redis: redis::RedisConnectionInfo {
+            db: 0,
+            username: None,
+            password: None,
+        }
+    };
 
+    let client = Client::open(conn_info).unwrap();
+    // let client = Client::open("redis://127.0.0.1:6379").unwrap();
     let manager = ConnectionManager::new(client).await?;
     let shared_manager = Arc::new(Mutex::new(manager));
     let address = "[::]:8080".parse().unwrap();
@@ -56,9 +60,7 @@ impl KeyValueStore for KeyValueStoreService {
         println!("Received set request: {:?}", r);
 
         let mut manager = self.manager.lock().unwrap().clone();
-        let start = Instant::now();
         let _: Result<String, RedisError> = manager.set(&r.key, &r.value).await;
-        println!("latency L1 (set) {:?}", start.elapsed());
 
         Ok(Response::new(KvResponse {
             status_code: 0,
@@ -71,9 +73,7 @@ impl KeyValueStore for KeyValueStoreService {
         let r = request.into_inner();
         println!("Received get request: {:?}", r);
         let mut manager = self.manager.lock().unwrap().clone();
-        let start = Instant::now();
         let result = manager.get(r.key).await;
-        println!("latency L1 (get) {:?}", start.elapsed());
 
         Ok(Response::new(KvResponse {
             status_code: 0,
