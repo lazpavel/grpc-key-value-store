@@ -13,11 +13,11 @@ pub async fn get_handler(
     let get_request = tonic::Request::new(KvGetRequest {
         key,
     });
-    let start = Instant::now();
     let mut client = {
         let lock = client.lock().unwrap();
         lock.clone()
     };
+    let start = Instant::now();
     let get_response = client.get(get_request).await;
     info!("latency L3 (get) {:?}", start.elapsed());
 
@@ -43,11 +43,11 @@ pub async fn set_handler(
         key,
         value: data,
     });
-    let start = Instant::now();
     let mut client = {
         let lock = client.lock().unwrap();
         lock.clone()
     };
+    let start = Instant::now();
     let _ = client.set(set_request).await;
     info!("latency L3 (set) {:?}", start.elapsed());
     Ok(StatusCode::CREATED)
