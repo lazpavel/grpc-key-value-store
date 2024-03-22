@@ -2,7 +2,7 @@ use kvstore::{
     key_value_store_server::{KeyValueStore, KeyValueStoreServer},
     KvGetRequest, KvResponse, KvSetRequest,
 };
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, time::Instant};
 use redis::{aio::ConnectionManager, AsyncCommands, Client, RedisError};
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -44,7 +44,9 @@ impl KeyValueStore for KeyValueStoreService {
         println!("Received set request: {:?}", r);
 
         let mut manager = self.manager.lock().unwrap().clone();
+        let start = Instant::now();
         let _: Result<String, RedisError> = manager.set(&r.key, &r.value).await;
+        println!("latency L1 (set) {:?}", start.elapsed());
 
         Ok(Response::new(KvResponse {
             status_code: 0,
@@ -57,8 +59,10 @@ impl KeyValueStore for KeyValueStoreService {
         let r = request.into_inner();
         println!("Received get request: {:?}", r);
         let mut manager = self.manager.lock().unwrap().clone();
+        let start = Instant::now();
         let result = manager.get(r.key).await;
-
+        println!("latency L1 (get) {:?}", start.elapsed());
+        
         Ok(Response::new(KvResponse {
             status_code: 0,
             message: "Get request received".into(),
